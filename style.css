@@ -1,0 +1,309 @@
+:root {
+  /* Premium Color Palette */
+  --bg-dark: #0f172a;
+  --accent-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+  --surface-glass: rgba(255, 255, 255, 0.03);
+  --surface-border: rgba(255, 255, 255, 0.08);
+  --text-main: #f8fafc;
+  --text-muted: #64748b;
+  --danger: #ef4444;
+
+  /* Radii & Shadows */
+  --radius-xl: 24px;
+  --radius-lg: 16px;
+  --radius-pill: 9999px;
+  --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family:
+    "Inter",
+    -apple-system,
+    sans-serif;
+  background-color: var(--bg-dark);
+  color: var(--text-main);
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  padding: 1rem;
+  overflow: hidden;
+  position: relative;
+}
+
+/* --- Splash Screen --- */
+.splash-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: var(--bg-dark); /* Matches your app's background */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999; /* Ensures it sits on top of absolutely everything */
+  transition:
+    opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+    visibility 0.6s;
+}
+
+/* We will trigger this class with JavaScript when the app is ready */
+.splash-screen.hidden {
+  opacity: 0;
+  visibility: hidden;
+}
+
+/* Premium gradient spinner */
+.loader {
+  margin-top: 2.5rem;
+  width: 36px;
+  height: 36px;
+  border: 4px solid rgba(255, 255, 255, 0.05);
+  border-left-color: #a855f7;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Ambient Background Glow */
+.bg-shape {
+  position: absolute;
+  width: 50vw;
+  height: 50vw;
+  background: var(--accent-gradient);
+  border-radius: 50%;
+  filter: blur(120px);
+  opacity: 0.15;
+  top: -10%;
+  left: -10%;
+  z-index: -1;
+  animation: pulse 10s ease-in-out infinite alternate;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1) translate(0, 0);
+  }
+  100% {
+    transform: scale(1.1) translate(5%, 5%);
+  }
+}
+
+.app-container {
+  background: var(--surface-glass);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  width: 100%;
+  max-width: 480px;
+  padding: 2.5rem;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--surface-border);
+  box-shadow: var(--shadow-glass);
+  z-index: 1;
+}
+
+header h1 {
+  font-size: 1.75rem;
+  font-weight: 600;
+  margin-bottom: 2rem;
+  text-align: center;
+  background: var(--accent-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.02em;
+}
+
+/* Integrated Input Group */
+.input-group {
+  display: flex;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-pill);
+  padding: 0.35rem;
+  margin-bottom: 2.5rem;
+  transition:
+    border-color 0.3s ease,
+    box-shadow 0.3s ease;
+}
+
+.input-group:focus-within {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+}
+
+#todo-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  padding: 0.75rem 1.25rem;
+  color: var(--text-main);
+  font-size: 1rem;
+  outline: none;
+  font-family: inherit;
+}
+
+#todo-input::placeholder {
+  color: var(--text-muted);
+}
+
+/* Motivational Note */
+.motivational-note-container {
+  background: rgba(255, 255, 255, 0.03);
+  border-left: 3px solid #a855f7; /* Matches the purple from the gradient */
+  padding: 0.85rem 1.25rem;
+  border-radius: var(--radius-lg);
+  margin-bottom: 2rem;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.motivational-note-container:hover,
+.motivational-note-container:focus-within {
+  background: rgba(255, 255, 255, 0.06);
+  transform: translateX(4px);
+}
+
+#motivational-note {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  font-style: italic;
+  outline: none;
+  line-height: 1.5;
+  transition: color 0.3s ease;
+}
+
+#motivational-note:empty::before {
+  content: "Write a note to keep yourself going...";
+  color: rgba(100, 116, 139, 0.5); /* Faded muted text */
+}
+
+#motivational-note:focus {
+  color: var(--text-main);
+  font-style: normal;
+}
+
+.btn-primary {
+  background: var(--accent-gradient);
+  color: white;
+  border: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.btn-primary:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+}
+
+.btn-primary:active {
+  transform: scale(0.95);
+}
+
+/* List Styling */
+.todo-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.todo-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid transparent;
+  border-radius: var(--radius-lg);
+  transition: all 0.3s ease;
+}
+
+.todo-item:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: var(--surface-border);
+  transform: translateY(-2px);
+}
+
+.todo-content {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  cursor: pointer;
+  font-weight: 400;
+  color: var(--text-main);
+  transition: color 0.3s ease;
+  width: 100%; /* Ensures the clickable area spans across */
+}
+
+/* Custom Checkbox mimicking */
+.todo-content::before {
+  content: "";
+  display: inline-block;
+  min-width: 20px;
+  height: 20px;
+  border: 2px solid var(--text-muted);
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+/* Completed State */
+.todo-item.completed .todo-content {
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
+
+.todo-item.completed .todo-content::before {
+  background: var(--accent-gradient);
+  border-color: transparent;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'%3E%3C/polyline%3E%3C/svg%3E");
+  background-size: 12px;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.delete-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 1.5rem;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  transition: all 0.2s ease;
+  opacity: 0;
+  margin-left: 0.5rem;
+}
+
+.todo-item:hover .delete-btn {
+  opacity: 1;
+}
+
+.delete-btn:hover {
+  color: var(--danger);
+  background: rgba(239, 68, 68, 0.1);
+}
