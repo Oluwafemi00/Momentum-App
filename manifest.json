@@ -2,7 +2,7 @@
   "name": "Momentum",
   "short_name": "Tasks",
   "description": "An offline-first task management application.",
-  "start_url": "/",
+  "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#f3f4f6",
   "theme_color": "#4f46e5",
