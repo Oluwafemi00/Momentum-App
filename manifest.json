@@ -1,6 +1,6 @@
 {
   "name": "Momentum",
-  "short_name": "Tasks",
+  "short_name": "Momentum",
   "description": "An offline-first task management application.",
   "start_url": "./index.html",
   "display": "standalone",

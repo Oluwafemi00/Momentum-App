@@ -5,7 +5,7 @@ const list = document.getElementById("todo-list");
 let db;
 let todos = []; // In-memory state
 
-// 1. Service Worker Registration (Optional, keep if you have sw.js)
+// 1. Service Worker Registration
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker

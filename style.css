@@ -1,5 +1,4 @@
 :root {
-  /* Premium Color Palette */
   --bg-dark: #0f172a;
   --accent-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
   --surface-glass: rgba(255, 255, 255, 0.03);
@@ -43,24 +42,24 @@ body {
   left: 0;
   width: 100vw;
   height: 100vh;
-  background-color: var(--bg-dark); /* Matches your app's background */
+  background-color: var(--bg-dark);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  z-index: 9999; /* Ensures it sits on top of absolutely everything */
+  z-index: 9999;
   transition:
     opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1),
     visibility 0.6s;
 }
 
-/* We will trigger this class with JavaScript when the app is ready */
+/* trigger this class with JavaScript when the app is ready */
 .splash-screen.hidden {
   opacity: 0;
   visibility: hidden;
 }
 
-/* Premium gradient spinner */
+/*  gradient spinner */
 .loader {
   margin-top: 2.5rem;
   width: 36px;
@@ -164,7 +163,7 @@ header h1 {
 /* Motivational Note */
 .motivational-note-container {
   background: rgba(255, 255, 255, 0.03);
-  border-left: 3px solid #a855f7; /* Matches the purple from the gradient */
+  border-left: 3px solid #a855f7;
   padding: 0.85rem 1.25rem;
   border-radius: var(--radius-lg);
   margin-bottom: 2rem;
@@ -306,4 +305,50 @@ header h1 {
 .delete-btn:hover {
   color: var(--danger);
   background: rgba(239, 68, 68, 0.1);
+}
+
+/* --- Mobile Responsiveness --- */
+@media (max-width: 600px) {
+  /* Reduce container padding to maximize screen space */
+  .app-container {
+    padding: 1.5rem;
+    border-radius: var(--radius-lg);
+  }
+
+  /* Slightly scale down the header */
+  header h1 {
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  /* Adjust the motivational note padding */
+  .motivational-note-container {
+    padding: 0.75rem 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  #motivational-note {
+    font-size: 0.9rem;
+  }
+
+  /* CRITICAL: Make delete buttons always visible on mobile */
+  /* Touch devices don't have hover, so users need to see the button */
+  .delete-btn {
+    opacity: 1;
+    background: rgba(239, 68, 68, 0.05); /* Very subtle red background */
+  }
+
+  /* Make the ambient background shape larger for portrait screens */
+  .bg-shape {
+    width: 80vw;
+    height: 80vw;
+    top: -5%;
+    left: -15%;
+  }
+
+  /* Scale down the splash screen logo slightly */
+  .splash-screen svg {
+    width: 60px;
+    height: 60px;
+  }
 }
