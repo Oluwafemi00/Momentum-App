@@ -1,185 +1,317 @@
-const form = document.getElementById("todo-form");
-const input = document.getElementById("todo-input");
-const list = document.getElementById("todo-list");
+// ============================================================
+//  MOMENTUM — Premium PWA Todo
+//  script.js
+// ============================================================
 
+// ─── STATE ───────────────────────────────────────────────────
 let db;
-let todos = []; // In-memory state
+let todos = [];
+let activeFilter = "all";
 
-// 1. Service Worker Registration
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker
-      .register("/sw.js")
-      .then(() => console.log("Service Worker registered successfully."))
-      .catch((err) =>
-        console.error("Service Worker registration failed:", err),
-      );
+// ─── DOM ─────────────────────────────────────────────────────
+const todoForm = document.getElementById("todoForm");
+const todoInput = document.getElementById("todoInput");
+const todoList = document.getElementById("todoList");
+const emptyState = document.getElementById("emptyState");
+const greetingEl = document.getElementById("greeting");
+const dateLabelEl = document.getElementById("dateLabel");
+const noteEl = document.getElementById("motivationalNote");
+const ringFill = document.getElementById("ringFill");
+const ringLabel = document.getElementById("ringLabel");
+const statTotal = document.getElementById("statTotal");
+const statDone = document.getElementById("statDone");
+const statLeft = document.getElementById("statLeft");
+const clearDoneBtn = document.getElementById("clearDoneBtn");
+
+// ─── CONSTANTS ───────────────────────────────────────────────
+const CIRC = 2 * Math.PI * 16; // ≈ 100.5
+const NOTE_KEY = "momentum_note";
+const DEFAULT_NOTE = "Every great day starts with a single task done well.";
+
+// ─── GREETING & DATE ─────────────────────────────────────────
+function updateGreeting() {
+  const now = new Date();
+  const hour = now.getHours();
+  let grt = "Good morning";
+  if (hour >= 12 && hour < 17) grt = "Good afternoon";
+  else if (hour >= 17) grt = "Good evening";
+  greetingEl.textContent = grt;
+
+  dateLabelEl.textContent = now.toLocaleDateString("en-US", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
   });
 }
+updateGreeting();
 
-// 2. IndexedDB Setup
-const initDB = () => {
+// ─── MOTIVATIONAL NOTE ───────────────────────────────────────
+const savedNote = localStorage.getItem(NOTE_KEY);
+noteEl.textContent = savedNote !== null ? savedNote : DEFAULT_NOTE;
+
+noteEl.addEventListener("blur", () => {
+  const txt = noteEl.textContent.trim();
+  if (!txt) {
+    noteEl.textContent = DEFAULT_NOTE;
+    localStorage.removeItem(NOTE_KEY);
+  } else {
+    localStorage.setItem(NOTE_KEY, txt);
+  }
+});
+noteEl.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    noteEl.blur();
+  }
+});
+
+// ─── INDEXEDDB ───────────────────────────────────────────────
+function initDB() {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open("TodoDatabase", 1);
-
-    request.onerror = () => reject("Failed to open IndexedDB");
-
-    request.onsuccess = (e) => {
+    const req = indexedDB.open("MomentumDB", 2);
+    req.onerror = () => reject("IndexedDB failed");
+    req.onsuccess = (e) => {
       db = e.target.result;
       resolve(db);
     };
-
-    request.onupgradeneeded = (e) => {
-      const database = e.target.result;
-      if (!database.objectStoreNames.contains("todos")) {
-        database.createObjectStore("todos", { keyPath: "id" });
+    req.onupgradeneeded = (e) => {
+      const d = e.target.result;
+      if (!d.objectStoreNames.contains("todos")) {
+        d.createObjectStore("todos", { keyPath: "id" });
       }
     };
   });
-};
+}
 
-// 3. Database Operations
-const loadTodosFromDB = () => {
+function dbGetAll() {
   return new Promise((resolve) => {
-    const transaction = db.transaction(["todos"], "readonly");
-    const store = transaction.objectStore("todos");
-    const request = store.getAll();
-    request.onsuccess = () => resolve(request.result);
+    const tx = db.transaction("todos", "readonly");
+    const store = tx.objectStore("todos");
+    const req = store.getAll();
+    req.onsuccess = () => resolve(req.result || []);
   });
-};
+}
 
-const saveTodoToDB = (todo) => {
-  const transaction = db.transaction(["todos"], "readwrite");
-  const store = transaction.objectStore("todos");
+function dbPut(todo) {
+  const tx = db.transaction("todos", "readwrite");
+  const store = tx.objectStore("todos");
   store.put(todo);
-};
-
-const deleteTodoFromDB = (id) => {
-  const transaction = db.transaction(["todos"], "readwrite");
-  const store = transaction.objectStore("todos");
-  store.delete(id);
-};
-
-// --- Motivational Note Logic ---
-const noteElement = document.getElementById("motivational-note");
-const DEFAULT_NOTE = "Stay consistent. Every small step counts.";
-const STORAGE_KEY = "todo_motivational_note";
-
-// Load the note when the app starts
-const savedNote = localStorage.getItem(STORAGE_KEY);
-if (savedNote !== null) {
-  noteElement.textContent = savedNote;
-} else {
-  noteElement.textContent = DEFAULT_NOTE;
 }
 
-// Save the note when the user clicks away (loses focus)
-noteElement.addEventListener("blur", () => {
-  const currentText = noteElement.textContent.trim();
-  if (currentText === "") {
-    // If they delete everything, revert to default
-    noteElement.textContent = DEFAULT_NOTE;
-    localStorage.removeItem(STORAGE_KEY);
-  } else {
-    localStorage.setItem(STORAGE_KEY, currentText);
-  }
+function dbDelete(id) {
+  const tx = db.transaction("todos", "readwrite");
+  const store = tx.objectStore("todos");
+  store.delete(id);
+}
+
+// ─── ADD TODO ────────────────────────────────────────────────
+todoForm.addEventListener("submit", (e) => {
+  e.preventDefault();
+  const text = todoInput.value.trim();
+  if (!text) return;
+
+  const todo = {
+    id: Date.now().toString(),
+    text,
+    completed: false,
+    createdAt: Date.now(),
+  };
+
+  todos.push(todo);
+  dbPut(todo);
+  todoInput.value = "";
+  renderTodos();
 });
 
-// Save and remove focus when pressing the 'Enter' key
-noteElement.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") {
-    e.preventDefault(); // Prevents a new line from being created
-    noteElement.blur(); // Triggers the save function above
-  }
-});
-// -------------------------------
+// ─── TOGGLE ──────────────────────────────────────────────────
+function toggleTodo(id) {
+  const todo = todos.find((t) => t.id === id);
+  if (!todo) return;
+  todo.completed = !todo.completed;
+  dbPut(todo);
+  renderTodos();
+}
 
-// 4. UI Rendering & Event Handling
+// ─── DELETE ──────────────────────────────────────────────────
+function deleteTodo(id) {
+  const li = todoList.querySelector(`[data-id="${id}"]`);
+  if (li) {
+    li.classList.add("removing");
+    li.addEventListener(
+      "animationend",
+      () => {
+        todos = todos.filter((t) => t.id !== id);
+        dbDelete(id);
+        renderTodos();
+      },
+      { once: true },
+    );
+  }
+}
+
+// ─── CLEAR DONE ──────────────────────────────────────────────
+clearDoneBtn.addEventListener("click", () => {
+  const done = todos.filter((t) => t.completed);
+  done.forEach((t) => dbDelete(t.id));
+  todos = todos.filter((t) => !t.completed);
+  renderTodos();
+});
+
+// ─── FILTER TABS ─────────────────────────────────────────────
+document.querySelectorAll(".tab").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    document
+      .querySelectorAll(".tab")
+      .forEach((b) => b.classList.remove("active"));
+    btn.classList.add("active");
+    activeFilter = btn.dataset.filter;
+    renderTodos();
+  });
+});
+
+// ─── RENDER ──────────────────────────────────────────────────
 function renderTodos() {
-  list.innerHTML = "";
-  todos.forEach((todo) => {
-    const li = document.createElement("li");
-    li.className = `todo-item ${todo.completed ? "completed" : ""}`;
-    li.dataset.id = todo.id;
+  todoList.innerHTML = "";
 
-    // Notice: Native checkbox removed. The CSS ::before handles the visuals.
-    li.innerHTML = `
-      <div class="todo-content">
-        <span>${todo.text}</span>
-      </div>
-      <button class="delete-btn" aria-label="Delete task">&times;</button>
-    `;
-    list.appendChild(li);
+  let filtered = todos;
+  if (activeFilter === "active") filtered = todos.filter((t) => !t.completed);
+  if (activeFilter === "done") filtered = todos.filter((t) => t.completed);
+
+  // Sort: incomplete first, then by date desc
+  filtered = [...filtered].sort((a, b) => {
+    if (a.completed !== b.completed) return a.completed ? 1 : -1;
+    return b.createdAt - a.createdAt;
+  });
+
+  if (filtered.length === 0) {
+    emptyState.classList.add("show");
+  } else {
+    emptyState.classList.remove("show");
+    filtered.forEach((todo) => {
+      const li = buildTaskItem(todo);
+      todoList.appendChild(li);
+    });
+  }
+
+  updateStats();
+  updateRing();
+}
+
+function buildTaskItem(todo) {
+  const li = document.createElement("li");
+  li.className = "task-item" + (todo.completed ? " completed" : "");
+  li.dataset.id = todo.id;
+
+  const date = new Date(todo.createdAt).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+
+  li.innerHTML = `
+    <div class="task-check ${todo.completed ? "checked" : ""}" role="checkbox" aria-checked="${todo.completed}" tabindex="0"></div>
+    <span class="task-text">${escHtml(todo.text)}</span>
+    <span class="task-date">${date}</span>
+    <button class="task-del" title="Delete task" aria-label="Delete task">
+      <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+    </button>
+  `;
+
+  // Check toggle
+  const check = li.querySelector(".task-check");
+  check.addEventListener("click", () => toggleTodo(todo.id));
+  check.addEventListener("keypress", (e) => {
+    if (e.key === "Enter" || e.key === " ") toggleTodo(todo.id);
+  });
+
+  // Text click also toggles
+  li.querySelector(".task-text").addEventListener("click", () =>
+    toggleTodo(todo.id),
+  );
+
+  // Delete
+  li.querySelector(".task-del").addEventListener("click", (e) => {
+    e.stopPropagation();
+    deleteTodo(todo.id);
+  });
+
+  return li;
+}
+
+// ─── STATS ───────────────────────────────────────────────────
+function updateStats() {
+  const total = todos.length;
+  const done = todos.filter((t) => t.completed).length;
+  const left = total - done;
+
+  statTotal.textContent = total;
+  statDone.textContent = done;
+  statLeft.textContent = left;
+}
+
+// ─── RING ────────────────────────────────────────────────────
+function updateRing() {
+  const total = todos.length;
+  const done = todos.filter((t) => t.completed).length;
+  const pct = total > 0 ? done / total : 0;
+  const offset = CIRC * (1 - pct);
+
+  ringFill.style.strokeDasharray = CIRC;
+  ringFill.style.strokeDashoffset = offset;
+  ringLabel.textContent = total > 0 ? `${Math.round(pct * 100)}%` : "—";
+}
+
+// ─── KEYBOARD SHORTCUTS ──────────────────────────────────────
+document.addEventListener("keydown", (e) => {
+  // Focus input on "/"
+  if (
+    e.key === "/" &&
+    document.activeElement !== todoInput &&
+    document.activeElement !== noteEl
+  ) {
+    e.preventDefault();
+    todoInput.focus();
+  }
+  // Escape to blur input
+  if (e.key === "Escape" && document.activeElement === todoInput) {
+    todoInput.blur();
+  }
+});
+
+// ─── UTILITY ─────────────────────────────────────────────────
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+// ─── SERVICE WORKER ──────────────────────────────────────────
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker
+      .register("./sw.js")
+      .then(() => console.log("SW registered"))
+      .catch((err) => console.warn("SW failed:", err));
   });
 }
 
-function addTodo(e) {
-  e.preventDefault();
-  const text = input.value.trim();
-
-  if (text) {
-    const newTodo = {
-      id: Date.now().toString(),
-      text: text,
-      completed: false,
-    };
-
-    todos.push(newTodo);
-    saveTodoToDB(newTodo);
-
-    input.value = "";
-    renderTodos();
-  }
-}
-
-function handleListAction(e) {
-  const item = e.target.closest(".todo-item");
-  if (!item) return;
-
-  const id = item.dataset.id;
-
-  // Handle Delete
-  if (e.target.classList.contains("delete-btn")) {
-    todos = todos.filter((t) => t.id !== id);
-    deleteTodoFromDB(id);
-    renderTodos();
-    return; // Stop execution so it doesn't trigger a toggle
-  }
-
-  // Handle Toggle Completion (clicks anywhere on the content or custom checkbox)
-  if (e.target.closest(".todo-content")) {
-    const todo = todos.find((t) => t.id === id);
-    if (todo) {
-      todo.completed = !todo.completed;
-      saveTodoToDB(todo);
-      renderTodos();
-    }
-  }
-}
-
-// 5. Application Bootstrap
-async function initApp() {
+// ─── BOOT ────────────────────────────────────────────────────
+async function init() {
   try {
     await initDB();
-    todos = await loadTodosFromDB();
-
-    form.addEventListener("submit", addTodo);
-    list.addEventListener("click", handleListAction);
-
+    todos = await dbGetAll();
     renderTodos();
-
-    // --- Splash Screen Dismissal ---
-    // We add a tiny artificial delay (800ms) so the animation
-    // actually has time to look smooth and premium before vanishing.
+  } catch (err) {
+    console.error("Init failed:", err);
+    todos = [];
+    renderTodos();
+  } finally {
     setTimeout(() => {
-      const splashScreen = document.getElementById("splash-screen");
-      splashScreen.classList.add("hidden");
-    }, 800);
-    // -------------------------------
-  } catch (error) {
-    console.error("Initialization error:", error);
+      document.getElementById("splash").classList.add("hidden");
+    }, 950);
   }
 }
 
-// Start the app
-initApp();
+init();
